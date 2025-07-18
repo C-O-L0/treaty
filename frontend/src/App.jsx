@@ -36,7 +36,37 @@ function App() {
     }));
   };
 
-  const handleSubmit = async (event) => {};
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    const submission = {
+      templateId: template.id,
+      answers: template.questions.map((q, index) => ({
+        question: q,
+        answer: answers[index] || "",
+      })),
+    };
+
+    try {
+      const response = await fetch(`{API_URL}/api/tesimonials`, {
+        method: "POST",
+        header: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(submission),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to submit testimonial");
+      }
+    } catch (error) {
+      console.error("Error submitting testimonial:", error);
+    } finally {
+      setIsSubmitting(false);
+      setSubmitted(true);
+      setAnswers({});
+    }
+  };
 
   if (loading) {
     return <div>Loading...</div>;
