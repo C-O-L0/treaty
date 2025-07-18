@@ -16,7 +16,7 @@ function App() {
   useEffect(() => {
     const fetchTemplate = async () => {
       try {
-        const response = await fetch(API_URL + "/api/template/1"); // Hardcoded template ID for simplicity
+        const response = await fetch(`${API_URL}/api/templates/1`); // Hardcoded template ID for simplicity
         const data = await response.json();
         setTemplate(data);
       } catch (error) {
