@@ -1,35 +1,78 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from "react";
+import "./App.css";
+
+const API_URL = "http://localhost:3001";
 
 function App() {
-  const [count, setCount] = useState(0)
+  // State for questions we fetch from the API
+  const [template, setTemplate] = useState([]);
+  // State for user's answers
+  const [answers, setAnswers] = useState({});
+  // State for loading and submission status
+  const [loading, setLoading] = useState(true);
+  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchTemplate = async () => {
+      try {
+        const response = await fetch(API_URL + "/api/template/1"); // Hardcoded template ID for simplicity
+        const data = await response.json();
+        setTemplate(data);
+      } catch (error) {
+        console.error("Error fetching template:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTemplate();
+  }, []);
+
+  const handleInputChange = (questionId, value) => {
+    setAnswers((prevAnswers) => ({
+      ...prevAnswers,
+      [questionId]: value,
+    }));
+  };
+
+  const handleSubmit = async (event) => {};
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (submitted) {
+    return (
+      <div className="container">
+        <h1>Thank You!</h1>
+        <p>Thank you for your submission!</p>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+    <div className="container">
+      <h1>{template?.name || "Testimonial Request"}</h1>
+      <p>Please answer the questions below.</p>
+      <form onSubmit={handleSubmit}>
+        {template?.questions.map((question, index) => (
+          <div key={index} className="form-group">
+            <label htmlFor={`question-${index}`}>{question}</label>
+            <textarea
+              rows="4"
+              values={answers[index] || ""}
+              onChange={(e) => handleInputChange(index, e.target.value)}
+              required
+            ></textarea>
+          </div>
+        ))}
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Submitting..." : "Submit"}
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+      </form>
+    </div>
+  );
 }
 
-export default App
+export default App;
