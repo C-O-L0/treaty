@@ -3,76 +3,103 @@ const cors = require("cors");
 const app = express();
 const port = 3001; // React uses 3000
 
-// Middleware to parse JSON
-app.use(express.json());
+// Import the database connection
+const db = require("./db");
 
 // Cors
 app.use(cors());
 
-// In memory template
-let templates = [
-  {
-    id: 1,
-    name: "Default Client Testimonial",
-    questions: [
-      "What was the primary problem you were facing before using our service?",
-      "What was the most significant benefit you've seen since implementation?",
-      "How would you rate our service on a scale of 1 to 10?",
-    ],
-  },
-];
-
-// In memory testimonials
-let testimonials = [];
+// Middleware to parse JSON
+app.use(express.json());
 
 // API endpoints
 // Get all templates
 app.get("/api/templates", (req, res) => {
-  console.log("Get request received for all templates");
-  res.json(templates);
+  try {
+    const statement = db.prepare("SELECT * FROM templates");
+    const templates = statement.all();
+    // Parse the JSON string back into an array
+    templates.forEach((t) => (t.questions = JSON.parsh(t.questions)));
+    res.json(templates);
+    console.log("GET request received for all templates.");
+  } catch (error) {
+    console.error("Error fetching templates:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // Get a single template by :ID
 app.get("/api/templates/:id", (req, res) => {
-  const templateId = parseInt(req.params.id);
-  const template = templates.find((t) => t.id === templateId);
-  if (template) {
-    console.log(`GET request received for template ID: ${templateId}`);
-    res.json(template);
-  } else {
-    console.log(`Template with ID: ${templateId} not found.`);
-    res.status(404).json({ error: "Template not found" });
+  try {
+    const statement = db.prepare("SELECT * FROM templates where id = ?");
+    const template = statement.get(req.params.id);
+    if (template) {
+      // Parse the JSON string back into an array
+      template.questions = JSON.parse(template.questions);
+      res.json(template);
+      console.log(
+        `GET request received for template with ID: ${req.params.id}`
+      );
+    } else {
+      res.status(404).json({ error: "Template not found" });
+      console.log(`Template with ID ${req.params.id} not found.`);
+    }
+  } catch (error) {
+    console.error("Error fetching template:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // Post a new template
 app.post("/api/templates", (req, res) => {
-  const newTemplate = req.body;
-  // Basic validation
-  if (!newTemplate.name || !newTemplate.questions) {
-    return res.status(400).json({ error: "Name and questions are required!" });
-  }
-  newTemplate.id = Date.now();
-  templates.push(newTemplate);
+  try {
+    const { name, questions } = req.body;
+    if (!name || !questions) {
+      return res.status(400).json({ error: "Name and questions are required" });
+    }
 
-  console.log("POST request received. New template created:", newTemplate);
-  res.status(201).json(newTemplate);
+    const statement = db.prepare(
+      "INSERT INTO templates (name, questions) VALUES (?, ?)"
+    );
+    const result = statement.run(name, JSON.stringify(questions));
+
+    res.status(201).json({ id: result.lastInsertRowid, name, questions });
+    console.log("New template created:", {
+      id: result.lastInsertRowid,
+      name,
+      questions,
+    });
+  } catch (error) {
+    console.error("Error creating template:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // Post a new testimonial
 app.post("/api/testimonials", (req, res) => {
-  const submission = {
-    id: Date.now(),
-    templateId: req.body.templateId,
-    answers: req.body.answers,
-    status: "pending", // For future approval dashboard
-    submittedAt: new Date().toISOString(),
-  };
+  try {
+    const { templateId, answers } = req.body;
+    if (!templateId || !answers) {
+      return res
+        .status(400)
+        .json({ error: "Template ID and answers are required" });
+    }
 
-  testimonials.push(submission);
-  console.log("New testimonial submitted:", submission);
-  console.log("All testimonials:", testimonials);
-  res.status(201).json(submission);
+    const statement = db.prepare(
+      "INSERT INTO testimonials (template_id, answers) VALUES (?, ?)"
+    );
+
+    const result = statement.run(templateId, JSON.stringify(answers));
+    res.status(201).json({ id: result.lastInsertRowid, templateId, answers });
+    console.log("New testimonial created:", {
+      id: result.lastInsertRowid,
+      templateId,
+      answers,
+    });
+  } catch (error) {
+    console.error("Error creating testimonial:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 app.listen(port, () => {

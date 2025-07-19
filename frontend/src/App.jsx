@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import "./App.css";
 
 const API_URL = "http://5.223.65.178:3001";
+// const API_URL = "http://localhost:3001"; // For local development
 
 function App() {
   // State for questions we fetch from the API
-  const [template, setTemplate] = useState([]);
+  const [template, setTemplate] = useState(null);
   // State for user's answers
   const [answers, setAnswers] = useState({});
   // State for loading and submission status
@@ -48,11 +49,13 @@ function App() {
       })),
     };
 
+    console.log("Sending this data to backend:", submission);
+
     try {
-      const response = await fetch(`{API_URL}/api/tesimonials`, {
+      const response = await fetch(`${API_URL}/api/testimonials`, {
         method: "POST",
-        header: {
-          "content-type": "application/json",
+        headers: {
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(submission),
       });
