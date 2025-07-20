@@ -21,6 +21,7 @@ const createTestimonialsTable = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     template_id INTEGER NOT NULL,
     answers TEXT NOT NULL,
+    media_url TEXT, -- Optional media URL for testimonials
     status TEXT NOT NULL DEFAULT 'pending',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (template_id) REFERENCES templates(id));

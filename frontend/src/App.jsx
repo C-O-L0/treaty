@@ -9,6 +9,8 @@ function App() {
   const [template, setTemplate] = useState(null);
   // State for user's answers
   const [answers, setAnswers] = useState({});
+  // State for media file (if any)
+  const [media, setMedia] = useState(null);
   // State for loading and submission status
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
@@ -41,33 +43,41 @@ function App() {
     event.preventDefault();
     setIsSubmitting(true);
 
-    const submission = {
-      templateId: template.id,
-      answers: template.questions.map((q, index) => ({
-        question: q,
-        answer: answers[index] || "",
-      })),
-    };
+    // Prepare form data for submission
+    const formData = new FormData();
 
-    console.log("Sending this data to backend:", submission);
+    const answerPayload = template.questions.map((q, index) => ({
+      question: q,
+      answer: answers[index] || "",
+    }));
+
+    // Append all data fields
+    formData.append("templateId", template.id);
+    formData.append("answers", JSON.stringify(answerPayload));
+
+    if (media) {
+      formData.append("media", media);
+    }
 
     try {
       const response = await fetch(`${API_URL}/api/testimonials`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(submission),
+        body: formData,
       });
+
       if (!response.ok) {
         throw new Error("Failed to submit testimonial");
       }
+
+      const result = await response.json();
+      console.log("Submission successful:", result);
+      setSubmitted(true);
     } catch (error) {
       console.error("Error submitting testimonial:", error);
+      alert("There was an error submitting your testimonial.");
+      setIsSubmitting(false);
     } finally {
       setIsSubmitting(false);
-      setSubmitted(true);
-      setAnswers({});
     }
   };
 
@@ -100,6 +110,15 @@ function App() {
             ></textarea>
           </div>
         ))}
+        <div className="form-group">
+          <label htmlFor="media">Upload Media (optional)</label>
+          <input
+            type="file"
+            id="media"
+            accept="image/*, audio/*, video/*"
+            onChange={(e) => setMedia(e.target.files[0])}
+          />
+        </div>
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Submitting..." : "Submit"}
         </button>

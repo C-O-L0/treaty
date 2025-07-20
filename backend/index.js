@@ -1,7 +1,25 @@
+require("dotenv").config();
+const multer = require("multer");
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const crypto = require("crypto");
 const express = require("express");
 const cors = require("cors");
 const app = express();
 const port = 3001; // React uses 3000
+
+// Configure Multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+// Configure AWS S3 client
+const s3 = new S3Client({
+  endpoint: `https://${process.env.B2_ENDPOINT}`,
+  region: process.env.B2_ENDPOINT.split(".")[1], // Extract region from endpoint
+  credentials: {
+    accessKeyId: process.env.B2_KEY_ID,
+    secretAccessKey: process.env.B2_APPLICATION_KEY,
+  },
+});
 
 // Import the database connection
 const db = require("./db");
@@ -75,8 +93,34 @@ app.post("/api/templates", (req, res) => {
   }
 });
 
+// upload.single("media") middleware to handle file uploads
 // Post a new testimonial
-app.post("/api/testimonials", (req, res) => {
+app.post("/api/testimonials", upload.single("media"), async (req, res) => {
+  console.log("Received file:", req.file);
+  console.log("Request body:", req.body);
+
+  let mediaUrl = null;
+
+  if (req.file) {
+    const randomFileName = crypto.randomBytes(16).toString("hex");
+    const key = `${randomFileName}-${req.file.originalname}`;
+
+    const command = new PutObjectCommand({
+      Bucket: process.env.B2_BUCKET_NAME,
+      Key: key,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+    });
+
+    try {
+      await s3.send(command);
+      mediaUrl = `https://f005.backblazeb2.com/file/${process.env.B2_BUCKET_NAME}/${key}`;
+    } catch (error) {
+      console.error("Error uploading file to B2:", error);
+      return res.status(500).json({ error: "Failed to upload file" });
+    }
+  }
+
   try {
     const { templateId, answers } = req.body;
     if (!templateId || !answers) {
@@ -86,15 +130,18 @@ app.post("/api/testimonials", (req, res) => {
     }
 
     const statement = db.prepare(
-      "INSERT INTO testimonials (template_id, answers) VALUES (?, ?)"
+      "INSERT INTO testimonials (template_id, answers, media_url) VALUES (?, ?, ?)"
     );
 
-    const result = statement.run(templateId, JSON.stringify(answers));
-    res.status(201).json({ id: result.lastInsertRowid, templateId, answers });
+    const result = statement.run(templateId, JSON.stringify(answers), mediaUrl);
+    res
+      .status(201)
+      .json({ id: result.lastInsertRowid, templateId, answers, mediaUrl });
     console.log("New testimonial created:", {
       id: result.lastInsertRowid,
       templateId,
       answers,
+      mediaUrl,
     });
   } catch (error) {
     console.error("Error creating testimonial:", error);
