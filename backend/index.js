@@ -93,6 +93,36 @@ app.post("/api/templates", (req, res) => {
   }
 });
 
+app.get("/api/testimonials", (req, res) => {
+  const status = req.query.status;
+  let statement;
+
+  if (status) {
+    statement = db.prepare(
+      "SELECT * FROM testimonials WHERE status = ? ORDER BY created_at DESC"
+    );
+  } else {
+    statement = db.prepare(
+      "SELECT * FROM testimonials ORDER BY created_at DESC"
+    );
+  }
+
+  try {
+    const testimonials = status ? statement.all(status) : statement.all();
+    testimonials.forEach((t) => {
+      if (t.answers) {
+        // Parse twice to handle double-encoded JSON
+        t.answers = JSON.parse(JSON.parse(t.answers));
+      }
+    });
+    res.json(testimonials);
+    console.log("GET request received for testimonials.");
+  } catch (error) {
+    console.error("Error fetching testimonials:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // upload.single("media") middleware to handle file uploads
 // Post a new testimonial
 app.post("/api/testimonials", upload.single("media"), async (req, res) => {
@@ -145,6 +175,50 @@ app.post("/api/testimonials", upload.single("media"), async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating testimonial:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Patch a testimonial status
+app.patch("/api/testimonials/:id/status", (req, res) => {
+  const { status } = req.body;
+  const allowedStatuses = ["pending", "approved", "rejected"];
+
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ error: "Invalid status" });
+  }
+
+  try {
+    const statement = db.prepare(
+      "UPDATE testimonials SET status = ? WHERE id = ?"
+    );
+    const result = statement.run(status, req.params.id);
+    if (result.change === 0) {
+      return res.status(404).json({ error: "Testimonial not found" });
+    }
+
+    res.status(200).json({ id: req.params.id, status: status });
+    console.log(
+      `Testimonial with ID ${req.params.id} updated to status: ${status}`
+    );
+  } catch (error) {
+    console.error("Error updating testimonial status:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Delete a testimonial
+app.delete("/api/testimonials/:id", (req, res) => {
+  try {
+    const statement = db.prepare("DELETE FROM testimonials WHERE id = ?");
+    const result = statement.run(req.params.id);
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Testimonial not found" });
+    }
+    res.status(204).send();
+    console.log(`Testimonial with ID ${req.params.id} deleted.`);
+  } catch (error) {
+    console.error("Error deleting testimonial:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
