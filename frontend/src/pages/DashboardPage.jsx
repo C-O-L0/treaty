@@ -1,8 +1,37 @@
-import { use } from "react";
 import { useState, useEffect, useCallback } from "react";
 
 const API_URL = "http://5.223.65.178:3001";
-// const API_URL = "http://localhost:3001"; // For local development
+//const API_URL = "http://localhost:3001"; // For local development
+
+function WidgetEmbed() {
+  const embed = `<div id="testimonial-widget"></div>\n<script src="${API_URL}/widget.js" defer></script>`;
+
+  const copyToClipboard = () => {
+    navigator.clipboard
+      .writeText(embed)
+      .then(() => {
+        alert("Widget embed code copied to clipboard!");
+      })
+      .catch((err) => {
+        console.error("Failed to copy: ", err);
+        alert("Failed to copy embed code.");
+      });
+  };
+
+  return (
+    <div className="embed-container">
+      <h3>Embed On Your Website</h3>
+      <p>
+        Copy and paste this snippet into your website's HTML where you want the
+        testimonials to appear.
+      </p>
+      <pre>
+        <code>{embed}</code>
+      </pre>
+      <button onClick={copyToClipboard}>Copy to Clipboard</button>
+    </div>
+  );
+}
 
 function DashboardPage() {
   const [testimonials, setTestimonials] = useState([]);
@@ -54,8 +83,8 @@ function DashboardPage() {
 
   return (
     <div className="dashboard-container">
+      <WidgetEmbed />
       <h2>Testimonial Dashboard</h2>
-      // Dropdown Filter options
       <div className="filter-options">
         <label htmlFor="status-filter">Filter by status:</label>
         <select

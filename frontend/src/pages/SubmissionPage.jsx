@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import "../App.css";
 
 const API_URL = "http://5.223.65.178:3001";
-// const API_URL = "http://localhost:3001"; // For local development
+//const API_URL = "http://localhost:3001"; // For local development
 
 function SubmissionPage() {
   // State for questions we fetch from the API

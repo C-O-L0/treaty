@@ -21,6 +21,9 @@ const s3 = new S3Client({
   },
 });
 
+// Serve static files from the 'public' directory
+app.use(express.static("public"));
+
 // Import the database connection
 const db = require("./db");
 
@@ -219,6 +222,26 @@ app.delete("/api/testimonials/:id", (req, res) => {
     console.log(`Testimonial with ID ${req.params.id} deleted.`);
   } catch (error) {
     console.error("Error deleting testimonial:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.get("/api/testimonials/widget", (req, res) => {
+  try {
+    const statement = db.prepare(
+      "SELECT * FROM testimonials WHERE status = 'approved' ORDER BY created_at DESC"
+    );
+    const testimonials = statement.all();
+    testimonials.forEach((t) => {
+      if (t.answers) {
+        // Parse twice to handle double-encoded JSON
+        t.answers = JSON.parse(JSON.parse(t.answers));
+      }
+      res.json(testimonials);
+      console.log("GET request received for testimonials widget.");
+    });
+  } catch (error) {
+    console.error("Error fetching testimonials for widget:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
