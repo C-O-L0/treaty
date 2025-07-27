@@ -1,0 +1,28 @@
+const express = require("express");
+const router = express.Router();
+
+// Import the database connection
+const db = require("../db");
+
+router.get("/testimonials/widget", (req, res) => {
+  try {
+    const statement = db.prepare(
+      "SELECT * FROM testimonials WHERE status = 'approved' ORDER BY created_at DESC"
+    );
+    const testimonials = statement.all();
+    testimonials.forEach((t) => {
+      if (t.answers) {
+        // Parse twice to handle double-encoded JSON
+        t.answers = JSON.parse(JSON.parse(t.answers));
+      }
+      res.json(testimonials);
+      console.log("GET request received for testimonials widget.");
+    });
+  } catch (error) {
+    console.error("Error fetching testimonials for widget:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Export the router
+module.exports = router;

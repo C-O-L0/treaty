@@ -7,12 +7,12 @@ function App() {
   return (
     <>
       <nav className="main-nav">
-        <Link to="/">Submission</Link>
+        <Link to="/submit">Submission</Link>
         <Link to="/dashboard">Dashboard</Link>
       </nav>
       <main>
         <Routes>
-          <Route path="/" element={<SubmissionPage />} />
+          <Route path="/submit" element={<SubmissionPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
         </Routes>
       </main>

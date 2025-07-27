@@ -16,10 +16,19 @@ function SubmissionPage() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Parameters from the URL query string
+  const urlParams = new URLSearchParams(window.location.search);
+  const requestId = urlParams.get("requestId");
+  const templateId = urlParams.get("templateId");
+
   useEffect(() => {
+    if (!requestId || !templateId) {
+      console.error("Missing requestId or templateId in URL");
+      return;
+    }
     const fetchTemplate = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/templates/1`); // Hardcoded template ID for simplicity
+        const response = await fetch(`${API_URL}/api/templates/${templateId}`); // Hardcoded template ID for simplicity
         const data = await response.json();
         setTemplate(data);
       } catch (error) {
@@ -29,8 +38,24 @@ function SubmissionPage() {
       }
     };
 
+    const trackOpen = async () => {
+      // Log 'opened' event
+      try {
+        await fetch(`${API_URL}/api/track/open`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ requestId }),
+        });
+      } catch (error) {
+        console.error("Error tracking open event:", error);
+      }
+    };
+
     fetchTemplate();
-  }, []);
+    trackOpen();
+  }, [templateId, requestId]);
 
   const handleInputChange = (questionId, value) => {
     setAnswers((prevAnswers) => ({
@@ -60,10 +85,13 @@ function SubmissionPage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/testimonials`, {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        `${API_URL}/api/testimonials?requestId=${requestId}`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to submit testimonial");

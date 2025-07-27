@@ -27,9 +27,20 @@ const createTestimonialsTable = `
     FOREIGN KEY (template_id) REFERENCES templates(id));
 `;
 
+const createTrackingEventstable = `
+    CREATE TABLE IF NOT EXISTS tracking_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id TEXT NOT NULL,
+    template_id INTEGER NOT NULL,
+    event_type TEXT NOT NULL, -- e.g. 'generated', 'opened', 'submitted'
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (template_id) REFERENCES templates(id));
+`;
+
 // Execute the SQL statements to create tables
 db.exec(createTemplatesTable);
 db.exec(createTestimonialsTable);
+db.exec(createTrackingEventstable);
 
 console.log("Database schema created.");
 
