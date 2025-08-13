@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import Analytics from "../components/Analytics";
 
-const API_URL = import.meta.env.API_URL || "http://localhost:3001";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 function WidgetEmbed() {
   const embed = `<div id="testimonial-widget"></div>\n<script src="${API_URL}/widget.js" defer></script>`;
