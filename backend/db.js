@@ -6,13 +6,26 @@ const db = new Database(path.resolve("saas.db"), { fileMustExist: false });
 
 console.log("Connected to the database.");
 
+// SQL schema for users
+const createUsersTable = `
+    CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    company TEXT NOT NULL,
+    public_key TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+`;
+
 // SQL schema for templates
 const createTemplatesTable = `
     CREATE TABLE IF NOT EXISTS templates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     questions TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+    creator_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (creator_id) REFERENCES users(id));
 `;
 
 // SQL schema for testimonials
@@ -27,6 +40,7 @@ const createTestimonialsTable = `
     FOREIGN KEY (template_id) REFERENCES templates(id));
 `;
 
+// SQL schema for tracking events
 const createTrackingEventstable = `
     CREATE TABLE IF NOT EXISTS tracking_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,6 +52,7 @@ const createTrackingEventstable = `
 `;
 
 // Execute the SQL statements to create tables
+db.exec(createUsersTable);
 db.exec(createTemplatesTable);
 db.exec(createTestimonialsTable);
 db.exec(createTrackingEventstable);

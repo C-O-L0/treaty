@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const router = express.Router();
 const crypto = require("crypto");
@@ -21,7 +22,7 @@ router.post("/request", (req, res) => {
     );
     result = statement.run(requestId, templateId, eventType);
 
-    const frontendUrl = "http://5.223.65.178:5173";
+    const frontendUrl = process.env.FRONTEND_API_URL || "http://localhost:5173"; // Default to local development URL
     const trackableUrl = `${frontendUrl}/submit?requestId=${requestId}&templateId=${templateId}`;
     console.log("New event request created:", {
       requestId,
@@ -41,42 +42,38 @@ router.post("/request", (req, res) => {
   }
 });
 
-// Log an 'opened' event
-router.post("/track/open", (req, res) => {
-  const { requestId } = req.body;
-  if (!requestId) {
-    return res.status(400).json({ error: "Request ID is required" });
-  }
-
+// Analyze the tracking events
+router.get("/track/analyze", (req, res) => {
   try {
+    const generated = db
+      .prepare(
+        "SELECT COUNT(*) as count FROM tracking_events WHERE event_type = 'generated'"
+      )
+      .get().count;
     const opened = db
       .prepare(
-        "SELECT * FROM tracking_events WHERE request_id = ? and event_type = 'opened'"
+        "SELECT COUNT(*) as count FROM tracking_events WHERE event_type = 'opened'"
       )
-      .get(requestId);
-    if (!opened) {
-      // Get the template_id from the original request
-      const originalRequest = db
-        .prepare(
-          "SELECT template_id FROM tracking_events WHERE request_id = ? LIMIT 1"
-        )
-        .get(requestId);
+      .get().count;
+    const submitted = db
+      .prepare(
+        "SELECT COUNT(*) as count FROM tracking_events WHERE event_type = 'submitted'"
+      )
+      .get().count;
 
-      if (originalRequest) {
-        const statement = db.prepare(
-          "UPDATE tracking_events SET event_type = 'opened' WHERE request_id = ? AND template_id = ?"
-        );
-        statement.run(requestId, originalRequest.template_id);
-      }
-    }
+    const openRate = generated > 0 ? (opened / generated) * 100 : 0;
+    const submitRate = generated > 0 ? (submitted / generated) * 100 : 0;
 
-    console.log(`Tracking 'opened' event for request ID: ${requestId}`);
-    return res
-      .status(200)
-      .json({ message: "Event tracked successfully", request_id: requestId });
+    res.json({
+      generated,
+      opened,
+      submitted,
+      openRate: openRate.toFixed(2),
+      submitRate: submitRate.toFixed(2),
+    });
   } catch (error) {
-    console.error("Error tracking open event:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Error analyzing tracking events:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

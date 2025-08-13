@@ -1,6 +1,7 @@
+require("dotenv").config();
+
 (function () {
-  const WIDGET_HOST = "http://5.223.65.178:3001";
-  //const WIDGET_HOST = "http://localhost:3001"; // For local development
+  const API_URL = process.env.API_URL || "http://localhost:3001";
 
   function renderWidget(testimonials) {
     const widgetContainer = document.getElementById("testimonial-widget");
@@ -37,7 +38,11 @@
 
   document.addEventListener("DOMContentLoaded", async () => {
     try {
-      const response = await fetch(`${WIDGET_HOST}/api/testimonials/widget`);
+      const response = await fetch(`${WIDGET_HOST}/api/testimonials/widget`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch testimonials for widget");
       }

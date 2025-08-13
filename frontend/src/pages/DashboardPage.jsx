@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import Analytics from "../components/Analytics";
 
-const API_URL = "http://5.223.65.178:3001";
-//const API_URL = "http://localhost:3001"; // For local development
+const API_URL = import.meta.env.API_URL || "http://localhost:3001";
 
 function WidgetEmbed() {
   const embed = `<div id="testimonial-widget"></div>\n<script src="${API_URL}/widget.js" defer></script>`;
@@ -37,6 +38,7 @@ function DashboardPage() {
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(""); // '', 'pending', 'approved', 'rejected'
+  const { authHeader } = useAuth();
 
   const fetchTestimonials = useCallback(async () => {
     setLoading(true);
@@ -44,7 +46,12 @@ function DashboardPage() {
       ? `${API_URL}/api/testimonials?status=${filter}`
       : `${API_URL}/api/testimonials`;
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeader,
+        },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch testimonials");
       }
@@ -68,6 +75,7 @@ function DashboardPage() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          ...authHeader,
         },
         body: JSON.stringify({ status: newStatus }),
       });
@@ -84,6 +92,7 @@ function DashboardPage() {
   return (
     <div className="dashboard-container">
       <WidgetEmbed />
+      <Analytics />
       <h2>Testimonial Dashboard</h2>
       <div className="filter-options">
         <label htmlFor="status-filter">Filter by status:</label>

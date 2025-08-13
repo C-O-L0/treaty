@@ -4,9 +4,13 @@ const cors = require("cors");
 const app = express();
 const port = process.env.PORT;
 const templateRoute = require("./routes/template_route");
+const publicTemplateRoute = require("./routes/public_template_route");
 const testimonialRoute = require("./routes/testimonial_route");
 const widgetRoute = require("./routes/widget_route");
 const eventRoute = require("./routes/event_route");
+const publicEventRoute = require("./routes/public_event_route");
+const authRoute = require("./routes/auth_route");
+const authToken = require("./middlewares/authToken");
 
 // Serve static files from the 'public' directory
 app.use(express.static("public"));
@@ -16,6 +20,18 @@ app.use(cors());
 
 // Middleware to parse JSON
 app.use(express.json());
+
+// Authentication routes
+app.use("/api", authRoute);
+
+// Public template routes
+app.use("/api/", publicTemplateRoute);
+
+// Public event routes
+app.use("/api", publicEventRoute);
+
+// Middleware to authenticate routes
+app.use(authToken);
 
 // API endpoints
 // Template routes
